@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestor de Pagos PRO</title>
+    <!-- Google Fonts: Inter & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --success: #16a34a;
+            --danger: #dc2626;
+            --gray: #64748b;
+            --bg: #e2e8f0;          
+            --card-bg: #f8fafc;     
+            --text-color: #0f172a;
+            --border-color: #cbd5e1;
+            --table-head-bg: #f1f5f9;
+            --input-bg: #ffffff;
+            --footer-bg: #f1f5f9;
+        }
+
+        body.dark-mode {
+            --primary: #3b82f6;
+            --bg: #030712;
+            --card-bg: #0f172a;
+            --text-color: #f8fafc;
+            --border-color: #475569;
+            --table-head-bg: #0f172a;
+            --gray: #94a3b8;
+            --input-bg: #020617;
+            --footer-bg: #0f172a;
+        }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            padding: 30px 20px; 
+            background-color: var(--bg); 
+            color: var(--text-color);
+            margin: 0; 
+            text-align: center; 
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .card { 
+            background: var(--card-bg); 
+            padding: 30px; 
+            border-radius: 16px; 
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05); 
+            display: inline-block;
+            text-align: left;
+            margin: 0 auto;
+            border: 1.5px solid var(--border-color);
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+        body.dark-mode .card {
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
+        }
+
+        .header-area {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 24px; border-bottom: 1.5px solid var(--border-color); padding-bottom: 15px;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .header-left { display: flex; align-items: center; gap: 30px; flex-wrap: wrap; }
+        .header-right { display: flex; align-items: center; gap: 12px; }
+        
+        .fecha-top { font-weight: 600; color: var(--text-color); font-size: 0.9rem; text-transform: capitalize; }
+
+        .btn-theme {
+            background: var(--card-bg);
+            border: 2px solid var(--primary);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 1.1rem;
+            transition: 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .btn-theme:hover {
+            transform: scale(1.08);
+            background-color: rgba(37, 99, 235, 0.1);
+        }
+
+        table { border-collapse: separate; border-spacing: 0; width: 100%; margin-bottom: 20px; border-radius: 10px; overflow: hidden; table-layout: auto; }
+        th, td { padding: 12px 10px; border: 1.5px solid var(--border-color); border-top: none; border-left: none; }
+        th:first-child, td:first-child { border-left: 1.5px solid var(--border-color); }
+        th { background: var(--table-head-bg); color: var(--text-color); text-transform: uppercase; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.05em; white-space: nowrap; text-align: center; border-top: 1.5px solid var(--border-color); }
+        
+        .header-filter {
+            font-size: 0.85rem;
+            padding: 8px 14px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--card-bg);
+            color: var(--text-color);
+            font-weight: 600;
+            outline: none;
+            cursor: pointer;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            transition: all 0.2s ease;
+            font-family: 'Inter', sans-serif;
+        }
+        .header-filter:hover { border-color: var(--primary); }
+        .header-filter:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2); }
+
+        .col-shrink { width: 1%; white-space: nowrap; text-align: center; }
+        
+        .hora-text, .num-input, .subtotal-cell, .total-area span, .inicio-input-group input, .inv-val {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .hora-text { font-size: 0.75rem; font-weight: 700; color: var(--text-color); }
+        
+        input, select { border: 1.5px solid var(--border-color); background: var(--input-bg); color: var(--text-color); border-radius: 6px; padding: 8px 12px; outline: none; box-sizing: border-box; font-family: 'Inter', sans-serif; font-size: 0.9rem; }
+        input:focus, select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2); }
+        .nom { min-width: 160px; width: 100%; }
+        
+        .num-input { width: 100%; text-align: center; min-width: 80px; font-weight: 700; }
+        .col-select { width: 140px; min-width: 130px; }
+        
+        .segmented-control {
+            display: inline-flex;
+            background: var(--input-bg);
+            border: 2px solid var(--border-color);
+            padding: 3px;
+            border-radius: 8px;
+            gap: 2px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .pill-btn {
+            flex: 1;
+            background: transparent;
+            border: 1px solid transparent;
+            padding: 6px 8px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--gray);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: 'Inter', sans-serif;
+        }
+        .pill-btn.active-compra {
+            background: var(--card-bg);
+            color: #e11d48;
+            border: 1px solid #e11d48;
+            box-shadow: 0 2px 4px rgba(225, 29, 72, 0.2);
+        }
+        .pill-btn.active-venta {
+            background: var(--card-bg);
+            color: #16a34a;
+            border: 1px solid #16a34a;
+            box-shadow: 0 2px 4px rgba(22, 163, 74, 0.2);
+        }
+        .pill-btn:hover { color: var(--text-color); border-color: var(--gray); }
+
+        tbody tr { background-color: var(--card-bg); transition: background-color 0.2s ease, box-shadow 0.2s ease; }
+        tbody tr:focus-within {
+            background-color: rgba(37, 99, 235, 0.04);
+            box-shadow: inset 0 0 0 1.5px rgba(37, 99, 235, 0.3);
+        }
+        body.dark-mode tbody tr:focus-within {
+            background-color: rgba(59, 130, 246, 0.05);
+            box-shadow: inset 0 0 0 1.5px rgba(59, 130, 246, 0.3);
+        }
+
+        tr.fila-gasto td:first-child { border-left: 4px solid #e11d48 !important; }
+        tr.fila-venta td:first-child { border-left: 4px solid #16a34a !important; }
+
+        .btn { 
+            padding: 10px 18px; 
+            cursor: pointer; 
+            border: 2px solid transparent; 
+            border-radius: 8px; 
+            font-weight: 700; 
+            font-family: 'Inter', sans-serif; 
+            transition: 0.2s; 
+        }
+        .btn-add { 
+            background-color: var(--primary); 
+            color: white; 
+            border-color: #1d4ed8;
+            box-shadow: 0 3px 6px rgba(37, 99, 235, 0.3); 
+        }
+        .btn-add:hover { background-color: #1d4ed8; transform: translateY(-1px); }
+        
+        .btn-export { 
+            background-color: #0f172a; 
+            color: white; 
+            border: 2px solid #334155;
+            flex-grow: 2; 
+            box-shadow: 0 3px 6px rgba(15, 23, 42, 0.3); 
+        }
+        body.dark-mode .btn-export { background-color: #1e293b; border-color: #64748b; }
+        .btn-export:hover { transform: translateY(-1px); }
+
+        .btn-reset { 
+            background-color: var(--danger); 
+            color: white; 
+            border: 2px solid #991b1b;
+            flex-grow: 1; 
+            box-shadow: 0 3px 6px rgba(220, 38, 38, 0.3); 
+        }
+        .btn-reset:hover { transform: translateY(-1px); }
+
+        .btn-del { 
+            background-color: var(--danger); 
+            color: white; 
+            border: 1.5px solid #991b1b;
+            border-radius: 6px;
+            width: 32px;
+            height: 32px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.9rem;
+            transition: 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+        }
+        body.dark-mode .btn-del { background-color: #b91c1c; border-color: #f87171; color: #ffffff; }
+        .btn-del:hover { background-color: #991b1b; transform: scale(1.1); }
+
+        .footer-table-area {
+            display: flex; flex-direction: column; margin-top: 15px; padding: 20px; 
+            background: var(--footer-bg); border-radius: 10px; border: 1.5px solid var(--border-color); gap: 15px;
+        }
+
+        .inventario-area {
+            display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; width: 100%;
+        }
+        .inv-box {
+            background: var(--card-bg); border: 2px solid var(--border-color); border-radius: 8px;
+            padding: 8px 4px; text-align: center; cursor: pointer; transition: 0.2s;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+        .inv-box:hover { background: rgba(37, 99, 235, 0.08); transform: translateY(-2px); border-color: var(--primary); }
+        body.dark-mode .inv-box:hover { background: rgba(59, 130, 246, 0.15); }
+        .inv-title { font-size: 0.65rem; font-weight: 700; color: var(--text-color); text-transform: uppercase; letter-spacing: 0.05em; }
+        .inv-val { font-size: 0.85rem; font-weight: 700; color: var(--primary); margin-top: 3px; }
+
+        .footer-bottom-row { display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 20px; }
+        .inicio-input-group { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 0.85rem; color: var(--text-color); }
+        .inicio-input-group input { width: 140px; font-size: 1.1rem; border: 2px solid var(--primary); text-align: right; color: var(--primary); font-weight: 700; }
+        .total-area { font-size: 1.3rem; font-weight: 700; letter-spacing: -0.02em; }
+        .total-area span { font-weight: 700; color: var(--primary); }
+        
+        .actions-group { display: flex; gap: 12px; margin-top: 20px; flex-wrap: wrap; }
+
+        /* Estilos para el Modal Pro */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(4px); display: none; justify-content: center; align-items: center;
+            z-index: 1000; padding: 15px; box-sizing: border-box;
+        }
+        .modal-box {
+            background: var(--card-bg); color: var(--text-color); width: 100%; max-width: 380px; border-radius: 14px;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2); overflow: hidden; animation: scaleIn 0.2s ease;
+            text-align: left; border: 2px solid var(--border-color);
+        }
+        @keyframes scaleIn {
+            from { transform: scale(0.95); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        .modal-header {
+            background: var(--footer-bg); padding: 16px 20px; border-bottom: 2px solid var(--border-color);
+            font-weight: 700; font-size: 0.95rem; color: var(--text-color); text-align: center;
+        }
+        .modal-body { padding: 20px; font-size: 0.95rem; color: var(--text-color); line-height: 1.6; }
+        .modal-footer { padding: 10px 20px 20px; text-align: center; display: flex; gap: 10px; }
+        .modal-btn {
+            background: var(--primary); color: white; border: 2px solid #1d4ed8; padding: 10px 25px;
+            border-radius: 8px; font-weight: 700; cursor: pointer; width: 100%; font-size: 0.95rem; font-family: 'Inter', sans-serif;
+            box-shadow: 0 3px 6px rgba(37, 99, 235, 0.3);
+        }
+        .modal-btn:hover { background: #1d4ed8; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div class="header-area">
+        <div class="header-left">
+            <h2 style="margin:0; color: var(--primary); font-weight: 700; letter-spacing: -0.02em;">Mis Registros</h2>
+            <div style="display: flex; gap: 10px;">
+                <select id="filtroOperacion" class="header-filter" onchange="aplicarFiltros()">
+                    <option value="">Operación: Todas</option>
+                    <option value="Compra">Compra</option>
+                    <option value="Venta">Venta</option>
+                </select>
+                <select id="filtroMoneda" class="header-filter" onchange="aplicarFiltros()">
+                    <option value="">Moneda: Todas</option>
+                    <option value="Usd">Usd</option>
+                    <option value="Euro">Euro</option>
+                    <option value="Zelle">Zelle</option>
+                    <option value="Mlc">Mlc</option>
+                    <option value="Canad">Canad</option>
+                    <option value="Saldo">Saldo</option>
+                    <option value="USDT">USDT</option>
+                    <option value="TRANSFER">TRANSFER</option>
+                    <option value="LIBRAS">LIBRAS</option>
+                    <option value="CLASICA">CLASICA</option>
+                </select>
+            </div>
+        </div>
+        <div class="header-right">
+            <button class="btn-theme" onclick="toggleTema()" title="Cambiar tema">🌙</button>
+            <div id="fechaHoy" class="fecha-top"></div>
+        </div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Hora</th>
+                <th>Nombre</th>
+                <th class="col-select">Operación</th>
+                <th class="col-select">Moneda</th>
+                <th class="col-shrink">Cant.</th>
+                <th class="col-shrink">Precio</th>
+                <th>Total</th>
+                <th class="col-shrink">🗑️</th>
+            </tr>
+        </thead>
+        <tbody id="cuerpoTabla"></tbody>
+    </table>
+
+    <div class="footer-table-area">
+        <div>
+            <button class="btn btn-add" onclick="agregarFila()">+ Fila</button>
+        </div>
+
+        <div class="inventario-area">
+            <div class="inv-box" onclick="mostrarDetalleMoneda('Usd')"><div class="inv-title">Usd</div><div class="inv-val" id="inv-Usd">0</div></div>
+            <div class="inv-box" onclick="mostrarDetalleMoneda('Euro')"><div class="inv-title">Euro</div><div class="inv-val" id="inv-Euro">0</div></div>
+            <div class="inv-box" onclick="mostrarDetalleMoneda('Zelle')"><div class="inv-title">Zelle</div><div class="inv-val" id="inv-Zelle">0</div></div>
+            <div class="inv-box" onclick="mostrarDetalleMoneda('Mlc')"><div class="inv-title">Mlc</div><div class="inv-val" id="inv-Mlc">0</div></div>
+            <div class="inv-box" onclick="mostrarDetalleMoneda('Canad')"><div class="inv-title">Canad</div><div class="inv-val" id="inv-Canad">0</div></div>
+            <div class="inv-box" onclick="mostrarDetalleMoneda('Saldo')"><div class="inv-title">Saldo</div><div class="inv-val" id="inv-Saldo">0</div></div>
+            <div class="inv-box" onclick="mostrarDetalleMoneda('USDT')"><div class="inv-title">USDT</div><div class="inv-val" id="inv-USDT">0</div></div>
+            <div class="inv-box" onclick="mostrarDetalleMoneda('TRANSFER')"><div class="inv-title">TRANSFER</div><div class="inv-val" id="inv-TRANSFER">0</div></div>
+            <div class="inv-box" onclick="mostrarDetalleMoneda('LIBRAS')"><div class="inv-title">LIBRAS</div><div class="inv-val" id="inv-LIBRAS">0</div></div>
+            <div class="inv-box" onclick="mostrarDetalleMoneda('CLASICA')"><div class="inv-title">CLASICA</div><div class="inv-val" id="inv-CLASICA">0</div></div>
+        </div>
+
+        <div class="footer-bottom-row">
+            <div class="inicio-input-group">
+                <label>INICIO:</label>
+                <input type="text" id="saldoInicio" placeholder="0.00" oninput="formatearInputNumero(this)">
+            </div>
+            <div class="total-area">
+                TOTAL: <span id="totalGeneral">0.00</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="actions-group">
+        <button class="btn btn-export" onclick="exportarPDF()">Exportar Reporte PDF</button>
+        <button class="btn btn-reset" onclick="resetearTabla(true)">Limpiar Todo</button>
+    </div>
+</div>
+
+<!-- Modal Personalizado -->
+<div id="customModal" class="modal-overlay">
+    <div class="modal-box">
+        <div class="modal-header" id="modalTitle">📌 DETALLE DE DIVISA</div>
+        <div class="modal-body" id="modalContent"></div>
+        <div class="modal-footer">
+            <button class="modal-btn" onclick="cerrarModal()">Aceptar</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const { jsPDF } = window.jspdf;
+    window.promediosCompra = {};
+    window.datosMonedasDetalle = {};
+
+    window.onload = () => {
+        const d = new Date();
+        document.getElementById('fechaHoy').innerText = d.toLocaleDateString('es-ES', { weekday:'long', day:'numeric', month:'long' });
+        
+        const temaGuardado = localStorage.getItem('miTema');
+        if (temaGuardado === 'dark') {
+            document.body.classList.add('dark-mode');
+            document.querySelector('.btn-theme').innerText = '☀️';
+        }
+
+        const inicio = localStorage.getItem('miSaldoInicio');
+        if (inicio) document.getElementById('saldoInicio').value = inicio;
+
+        const guardado = localStorage.getItem('misPagos');
+        if (guardado) {
+            JSON.parse(guardado).forEach(datos => agregarFila(datos));
+        } else {
+            agregarFila();
+        }
+        guardarYRecalcular();
+    };
+
+    function toggleTema() {
+        document.body.classList.toggle('dark-mode');
+        const isDark = document.body.classList.contains('dark-mode');
+        localStorage.setItem('miTema', isDark ? 'dark' : 'light');
+        document.querySelector('.btn-theme').innerText = isDark ? '☀️' : '🌙';
+    }
+
+    function formatearInputNumero(input) {
+        let v = input.value.replace(/[^0-9.]/g, '');
+        const p = v.split('.');
+        if (p.length > 2) v = p[0] + '.' + p.slice(1).join('');
+        if (v !== '') {
+            const n = v.split('.');
+            n[0] = n[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+            input.value = n.join('.');
+        }
+        guardarYRecalcular();
+    }
+
+    function formatearNumero(n) {
+        return new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+    }
+
+    function obtenerHoraActual() {
+        const d = new Date();
+        let h = d.getHours();
+        let m = d.getMinutes();
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        h = h % 12;
+        h = h ? h : 12;
+        m = m < 10 ? '0' + m : m;
+        return `${h}:${m} ${ampm}`;
+    }
+
+    function setOperacion(btn, opVal) {
+        const container = btn.closest('.segmented-control');
+        container.querySelectorAll('.pill-btn').forEach(b => {
+            b.classList.remove('active-compra', 'active-venta');
+        });
+        if (opVal === 'Compra') {
+            btn.classList.add('active-compra');
+        } else {
+            btn.classList.add('active-venta');
+        }
+        guardarYRecalcular();
+    }
+
+    function agregarFila(d = {hora: '--:--', nom:'', operacion:'', moneda:'', cant:'', prec:''}) {
+        const tbody = document.getElementById("cuerpoTabla");
+        const fila = document.createElement("tr");
+        fila.innerHTML = `
+            <td class="col-shrink"><div class="hora-text">${d.hora || '--:--'}</div></td>
+            <td><input type="text" class="nom" value="${d.nom}" placeholder="Descripcion..." oninput="guardarYRecalcular()"></td>
+            <td>
+                <div class="segmented-control">
+                    <button type="button" class="pill-btn ${d.operacion === 'Compra' ? 'active-compra' : ''}" onclick="setOperacion(this, 'Compra')">Compra</button>
+                    <button type="button" class="pill-btn ${d.operacion === 'Venta' ? 'active-venta' : ''}" onclick="setOperacion(this, 'Venta')">Venta</button>
+                </div>
+            </td>
+            <td>
+                <select class="select-moneda" style="width:100%" onchange="guardarYRecalcular()">
+                    <option value="" ${d.moneda === '' ? 'selected' : ''} disabled>Moneda</option>
+                    <option value="Usd" ${d.moneda === 'Usd' ? 'selected' : ''}>Usd</option>
+                    <option value="Euro" ${d.moneda === 'Euro' ? 'selected' : ''}>Euro</option>
+                    <option value="Zelle" ${d.moneda === 'Zelle' ? 'selected' : ''}>Zelle</option>
+                    <option value="Mlc" ${d.moneda === 'Mlc' ? 'selected' : ''}>Mlc</option>
+                    <option value="Canad" ${d.moneda === 'Canad' ? 'selected' : ''}>Canad</option>
+                    <option value="Saldo" ${d.moneda === 'Saldo' ? 'selected' : ''}>Saldo</option>
+                    <option value="USDT" ${d.moneda === 'USDT' ? 'selected' : ''}>USDT</option>
+                    <option value="TRANSFER" ${d.moneda === 'TRANSFER' ? 'selected' : ''}>TRANSFER</option>
+                    <option value="LIBRAS" ${d.moneda === 'LIBRAS' ? 'selected' : ''}>LIBRAS</option>
+                    <option value="CLASICA" ${d.moneda === 'CLASICA' ? 'selected' : ''}>CLASICA</option>
+                </select>
+            </td>
+            <td class="col-shrink"><input type="text" value="${d.cant}" class="num-input cant" placeholder="0" oninput="formatearInputNumero(this)"></td>
+            <td class="col-shrink"><input type="text" value="${d.prec}" class="num-input prec" placeholder="0.00" oninput="formatearInputNumero(this)"></td>
+            <td class="subtotal-cell" style="font-weight:700; text-align:right; min-width: 100px;">0.00</td>
+            <td class="col-shrink" style="text-align:center;"><button class="btn-del" onclick="eliminarFila(this)" title="Eliminar">✕</button></td>
+        `;
+        tbody.appendChild(fila);
+        guardarYRecalcular();
+    }
+
+    function eliminarFila(btn) {
+        if(confirm("¿Eliminar fila?")) {
+            btn.closest('tr').remove();
+            guardarYRecalcular();
+        }
+    }
+
+    function aplicarFiltros() {
+        const opFiltro = document.getElementById('filtroOperacion').value;
+        const monFiltro = document.getElementById('filtroMoneda').value;
+
+        document.querySelectorAll("#cuerpoTabla tr").forEach(f => {
+            const activePill = f.querySelector('.pill-btn.active-compra, .pill-btn.active-venta');
+            const op = activePill ? (activePill.classList.contains('active-compra') ? 'Compra' : 'Venta') : '';
+            const mon = f.querySelector('.select-moneda').value;
+
+            let matchOp = !opFiltro || op === opFiltro;
+            let matchMon = !monFiltro || mon === monFiltro;
+
+            if (matchOp && matchMon) {
+                f.style.display = "";
+            } else {
+                f.style.display = "none";
+            }
+        });
+    }
+
+    function guardarYRecalcular() {
+        const inicioStr = document.getElementById('saldoInicio').value;
+        const inicio = parseFloat(inicioStr.replace(/,/g, '')) || 0;
+        
+        let sGastos = 0, sVenta = 0, datos = [];
+
+        let inventario = { 'Usd': 0, 'Euro': 0, 'Zelle': 0, 'Mlc': 0, 'Canad': 0, 'Saldo': 0, 'USDT': 0, 'TRANSFER': 0, 'LIBRAS': 0, 'CLASICA': 0 };
+        window.datosMonedasDetalle = { 'Usd': {cCompra:0, tCompra:0, cVenta:0, tVenta:0}, 'Euro': {cCompra:0, tCompra:0, cVenta:0, tVenta:0}, 'Zelle': {cCompra:0, tCompra:0, cVenta:0, tVenta:0}, 'Mlc': {cCompra:0, tCompra:0, cVenta:0, tVenta:0}, 'Canad': {cCompra:0, tCompra:0, cVenta:0, tVenta:0}, 'Saldo': {cCompra:0, tCompra:0, cVenta:0, tVenta:0}, 'USDT': {cCompra:0, tCompra:0, cVenta:0, tVenta:0}, 'TRANSFER': {cCompra:0, tCompra:0, cVenta:0, tVenta:0}, 'LIBRAS': {cCompra:0, tCompra:0, cVenta:0, tVenta:0}, 'CLASICA': {cCompra:0, tCompra:0, cVenta:0, tVenta:0} };
+
+        document.querySelectorAll("#cuerpoTabla tr").forEach(f => {
+            const horaEl = f.querySelector('.hora-text');
+            const activePill = f.querySelector('.pill-btn.active-compra, .pill-btn.active-venta');
+            const op = activePill ? (activePill.classList.contains('active-compra') ? 'Compra' : 'Venta') : '';
+            const mon = f.querySelector('.select-moneda').value;
+            
+            const cInput = f.querySelector('.cant').value;
+            const pInput = f.querySelector('.prec').value;
+            const c = parseFloat(cInput.replace(/,/g, '')) || 0;
+            const p = parseFloat(pInput.replace(/,/g, '')) || 0;
+            const sub = c * p;
+            
+            if (horaEl.innerText === '--:--' && c > 0 && p > 0) {
+                horaEl.innerText = obtenerHoraActual();
+            }
+
+            f.cells[6].innerText = formatearNumero(sub);
+            
+            if (op === 'Venta') {
+                f.className = 'fila-venta';
+                sVenta += sub;
+                if (mon && inventario[mon] !== undefined) {
+                    inventario[mon] -= c;
+                    window.datosMonedasDetalle[mon].cVenta += c;
+                    window.datosMonedasDetalle[mon].tVenta += sub;
+                }
+            } else if (op === 'Compra') {
+                f.className = 'fila-gasto';
+                sGastos += sub;
+                if (mon && inventario[mon] !== undefined) {
+                    inventario[mon] += c;
+                    window.datosMonedasDetalle[mon].cCompra += c;
+                    window.datosMonedasDetalle[mon].tCompra += sub;
+                }
+            } else {
+                f.className = '';
+            }
+            
+            datos.push({
+                hora: horaEl.innerText, 
+                nom: f.querySelector('.nom').value, 
+                operacion: op, 
+                moneda: mon, 
+                cant: cInput, 
+                prec: pInput
+            });
+        });
+
+        Object.keys(inventario).forEach(key => {
+            const el = document.getElementById(`inv-${key}`);
+            if (el) el.innerText = formatearNumero(inventario[key]);
+            
+            const det = window.datosMonedasDetalle[key];
+            window.promediosCompra[key] = det.cCompra > 0 ? (det.tCompra / det.cCompra) : 0;
+        });
+
+        const total = inicio - sGastos + sVenta;
+        document.getElementById("totalGeneral").innerText = formatearNumero(total);
+        localStorage.setItem('misPagos', JSON.stringify(datos));
+        localStorage.setItem('miSaldoInicio', inicioStr);
+
+        aplicarFiltros();
+    }
+
+    function mostrarDetalleMoneda(moneda) {
+        const prom = window.promediosCompra[moneda] || 0;
+        const det = window.datosMonedasDetalle[moneda] || {cCompra:0, tCompra:0, cVenta:0, tVenta:0};
+        const invActual = parseFloat(document.getElementById(`inv-${moneda}`).innerText.replace(/,/g, '')) || 0;
+        
+        const ganancia = det.cVenta > 0 ? det.tVenta - (det.cVenta * prom) : 0;
+
+        const content = document.getElementById('modalContent');
+        document.getElementById('modalTitle').innerText = `📌 DETALLE: ${moneda.toUpperCase()}`;
+
+        content.innerHTML = `
+            <b>Cantidad en Inventario:</b> ${formatearNumero(invActual)}<br>
+            <b>Precio Medio Compra:</b> $ ${formatearNumero(prom)} CUP<br>
+            <b>Total Comprado hoy:</b> ${formatearNumero(det.cCompra)}<br>
+            <b>Total Vendido hoy:</b> ${formatearNumero(det.cVenta)}<br>
+            <b>Ganancia Generada:</b> <span style="color: #16a34a; font-weight: 700;">$ ${formatearNumero(ganancia)} CUP</span><br><br>
+            <span style="color: var(--primary);">💡 Margen de beneficio neto obtenido por las unidades comercializadas hoy.</span>
+        `;
+        document.getElementById('customModal').style.display = 'flex';
+    }
+
+    function cerrarModal() {
+        document.getElementById('customModal').style.display = 'none';
+    }
+
+    function resetearTabla(confirmar = false) {
+        if (confirmar && !confirm("¿Deseas limpiar los registros y pasar el total actual como nuevo saldo inicial?")) return;
+        
+        // Capturar el total actual antes de borrar los registros
+        const totalActual = document.getElementById('totalGeneral').innerText;
+        
+        localStorage.removeItem('misPagos');
+        document.getElementById('cuerpoTabla').innerHTML = "";
+        
+        // Asignar el total anterior directamente al campo INICIO
+        document.getElementById('saldoInicio').value = totalActual;
+        
+        agregarFila();
+        guardarYRecalcular();
+    }
+
+    function exportarPDF() {
+        const filas = document.querySelectorAll("#cuerpoTabla tr");
+        if (filas.length === 0) { alert("No hay datos para exportar."); return; }
+
+        const doc = new jsPDF();
+        const inicio = document.getElementById('saldoInicio').value || "0.00";
+        doc.setFontSize(18); doc.text("Reporte de Operaciones", 14, 20);
+        doc.setFontSize(10); doc.text("Fecha: " + new Date().toLocaleString(), 14, 28);
+        doc.text("Saldo Inicial: " + inicio, 14, 34);
+
+        const rows = Array.from(filas).map(f => {
+            const activePill = f.querySelector('.pill-btn.active-compra, .pill-btn.active-venta');
+            const op = activePill ? (activePill.classList.contains('active-compra') ? 'Compra' : 'Venta') : '---';
+            return [
+                f.querySelector('.hora-text').innerText,
+                f.querySelector('.nom').value,
+                op,
+                f.querySelector('.select-moneda').value || "---",
+                f.querySelector('.cant').value || "",
+                f.querySelector('.prec').value || "",
+                f.cells[6].innerText
+            ];
+        });
+
+        doc.autoTable({
+            startY: 40,
+            head: [['Hora', 'Nombre', 'Operación', 'Moneda', 'Cant', 'Precio', 'Subtotal']],
+            body: rows,
+            foot: [['', '', '', '', '', 'TOTAL FINAL', document.getElementById("totalGeneral").innerText]],
+            footStyles: { fillColor: [37, 99, 235] }
+        });
+        
+        doc.save("Reporte.pdf");
+        setTimeout(() => { if(confirm("Reporte generado. ¿Deseas limpiar la tabla y pasar el total al inicio para el próximo corte?")) resetearTabla(false); }, 500);
+    }
+</script>
+</body>
+</html>
