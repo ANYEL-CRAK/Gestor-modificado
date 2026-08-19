@@ -258,7 +258,6 @@
         .inicio-input-group { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 0.85rem; color: var(--text-color); }
         .inicio-input-group input { width: 140px; font-size: 1.1rem; border: 2px solid var(--primary); text-align: right; color: var(--primary); font-weight: 700; }
         
-        /* TAMAÑO ACTUALIZADO IGUAL AL TOTAL (1.3rem) */
         .ganancia-area { font-size: 1.3rem; font-weight: 700; letter-spacing: -0.02em; }
         .ganancia-area span { font-weight: 700; color: var(--success); }
         
@@ -369,7 +368,6 @@
                 <input type="text" id="saldoInicio" placeholder="0.00" oninput="formatearInputNumero(this)">
             </div>
             
-            <!-- BLOQUE DE GANANCIA AMPLIADO -->
             <div class="ganancia-area">
                 GANANCIA: <span id="gananciaGlobal">0.00</span>
             </div>
@@ -681,8 +679,23 @@
         } else if (tipo === 'exportar') {
             const totalActual = document.getElementById('totalGeneral').innerText;
             
+            // Guardar inventario base actualizado
             localStorage.setItem('miInventarioBase', JSON.stringify(window.inventarioActual));
-            localStorage.setItem('misDetallesBase', JSON.stringify(window.datosMonedasDetalle));
+            
+            // Reiniciar los detalles base de ganancias y compras/ventas acumuladas para que la ganancia comience en 0
+            const detallesLimpios = { 
+                'Usd': {cCompra:0, tCompra:0, cVenta:0, tVenta:0}, 
+                'Euro': {cCompra:0, tCompra:0, cVenta:0, tVenta:0}, 
+                'Zelle': {cCompra:0, tCompra:0, cVenta:0, tVenta:0}, 
+                'Mlc': {cCompra:0, tCompra:0, cVenta:0, tVenta:0}, 
+                'Canad': {cCompra:0, tCompra:0, cVenta:0, tVenta:0}, 
+                'Saldo': {cCompra:0, tCompra:0, cVenta:0, tVenta:0}, 
+                'USDT': {cCompra:0, tCompra:0, cVenta:0, tVenta:0}, 
+                'TRANSFER': {cCompra:0, tCompra:0, cVenta:0, tVenta:0}, 
+                'LIBRAS': {cCompra:0, tCompra:0, cVenta:0, tVenta:0}, 
+                'CLASICA': {cCompra:0, tCompra:0, cVenta:0, tVenta:0} 
+            };
+            localStorage.setItem('misDetallesBase', JSON.stringify(detallesLimpios));
             
             localStorage.removeItem('misPagos');
             document.getElementById('cuerpoTabla').innerHTML = "";
@@ -726,10 +739,12 @@
             footStyles: { fillColor: [37, 99, 235] }
         });
         
-        doc.save("Reporte.pdf");
+        // Generar nombre de archivo con la fecha actual (YYYY-MM-DD)
+        const fechaHoyStr = new Date().toISOString().split('T')[0];
+        doc.save(`Reporte_Pagos_${fechaHoyStr}.pdf`);
         
         setTimeout(() => { 
-            if(confirm("✅ Reporte PDF generado con éxito.\n\n¿Deseas limpiar las operaciones y pasar el Total al Inicio?\n\n(Tu inventario de monedas SE MANTENDRÁ intacto para que puedas seguir trabajando)")) {
+            if(confirm("✅ Reporte PDF generado con éxito.\n\n¿Deseas limpiar las operaciones, reiniciar la ganancia y pasar el Total al Inicio?\n\n(Tu inventario de monedas SE MANTENDRÁ intacto para que puedas seguir trabajando)")) {
                 limpiarRegistros('exportar');
             } 
         }, 500);
